@@ -13,7 +13,7 @@ services:
       - "--entrypoints.websecure.address=:443"
       - "--certificatesresolvers.${CERT_RESOLVER}.acme.dnschallenge=true"
       - "--certificatesresolvers.${CERT_RESOLVER}.acme.dnschallenge.provider=${DOMAIN_BASE}"
-      - "--certificatesresolvers.${CERT_RESOLVER}.acme.dnschallenge.delaybeforecheck=${DELAY_BEFORE_CHECK:0}"
+      - "--certificatesresolvers.${CERT_RESOLVER}.acme.dnschallenge.delaybeforecheck=${DELAY_BEFORE_CHECK}"
       - "--certificatesresolvers.${CERT_RESOLVER}.acme.email=${CERT_EMAIL}"
       - "--certificatesresolvers.${CERT_RESOLVER}.acme.storage=/letsencrypt/acme.json"
     ports:
