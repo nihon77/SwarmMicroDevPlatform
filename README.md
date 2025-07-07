@@ -115,18 +115,64 @@ newgrp docker # or log out and log back in
 
 # 11. Run a test container to verify that Docker is installed correctly.
 docker run hello-world
-```sh
+```
 
 ## 🌟 Initializing Docker Swarm Cluster
 
-On the manager node:
+Docker Swarm lets you manage a cluster (group) of Docker hosts as a single, highly available system.  
+A Swarm consists of two roles:
+- **Manager node:** Handles cluster management and orchestration.
+- **Worker node:** Runs containers as instructed by the manager.
 
+### Step 1: Initialize the Manager Node
+
+On your main (manager) server, run:
+
+```sh
 docker swarm init --advertise-addr <MANAGER_IP>
-Note the docker swarm join command output.
+```
 
-On the worker node, run:
+Replace <MANAGER_IP> with the public static IP address of your manager node (the main server).
+This command initializes Docker Swarm on your manager and prints a docker swarm join command containing a unique token.
+Copy the entire output, especially the docker swarm join command, as you will use it on your worker nodes.
 
-docker swarm join --token <TOKEN> <MANAGER_IP>:2377
+Example output:
+
+```sh
+Swarm initialized: current node (abcd1234...) is now a manager.
+
+To add a worker to this swarm, run the following command:
+
+    docker swarm join --token SWMTKN-1-xxxx <MANAGER_IP>:2377
+```
+
+### Step 2: Join Worker Nodes
+
+On every worker node you want to add, use the join command you copied earlier from the manager node:
+
+```sh
+docker swarm join --token <WORKER_TOKEN> <MANAGER_IP>:2377
+```
+
+- **<WORKER_TOKEN>** is the token portion from your manager's output.
+- **<MANAGER_IP>** is the same public IP of your manager node.
+- **Port 2377** is the default port for Docker Swarm management.
+
+>Tip:
+>If you lose the join command or want to add more nodes later, just run this on the manager to get the current worker token:
+>```sh
+>docker swarm join-token worker
+>```
+
+### Step 3: Verify Your Swarm Cluster
+
+Back on your manager node, list all Swarm nodes:
+
+```sh
+docker node ls
+```
+You should see your manager and all joined workers listed, including their status and roles.
+If you see Ready under "STATUS", your nodes are successfully connected.
 
 ## 🧰 Launch the Base Stack Docker Compose (main-stack.yml)
 Includes Traefik, Portainer, and private Docker registry.
