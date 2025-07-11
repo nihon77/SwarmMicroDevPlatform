@@ -1,0 +1,46 @@
+
+steps:
+    # Build and push the Docker image using Buildx 6
+    build-whoami:
+        image: woodpeckerci/plugin-docker-buildx:6.0.1
+        
+        settings:
+            # Clone a repository from GitHub (main branch)
+            context: "./"
+            # Use the Dockerfile in the root of the repository
+            dockerfile: Dockerfile
+            # Target repository in your private registry
+            repo:
+                from_secret: WHOAMI_REGISTRY_REPO
+            # Tag the image as 'latest' and with the commit SHA
+            tags: latest, ${CI_COMMIT_SHA}
+            # Push the built image to the registry
+            push: true
+            # Use secrets for registry Registry address for authentication
+            registry: 
+                from_secret: REGISTRY_URL
+            # Use secrets for registry username and password
+            username:
+                from_secret: REGISTRY_USERNAME
+            password:
+                from_secret: REGISTRY_PASSWORD
+
+    # Update the running service in Docker Swarm with the new image
+    update-stack:
+        image: docker
+        environment:
+            # Pass registry credentials as environment variables
+            REGISTRY_USERNAME:
+                from_secret: REGISTRY_USERNAME
+            REGISTRY_PASSWORD:
+                from_secret: REGISTRY_PASSWORD
+            REGISTRY_URL: 
+                from_secret: REGISTRY_URL
+        volumes:
+            # Mount Docker socket to allow Docker CLI commands This needs Trust Volume checked in the repository settings in woodpeacker!
+            - /var/run/docker.sock:/var/run/docker.sock
+        commands:
+            # Log in to the private registry using the provided credentials
+            - echo "$REGISTRY_PASSWORD" | docker login $REGISTRY_URL -u "$REGISTRY_USERNAME" --password-stdin
+            # Update the Swarm service to use the new image tagged with the commit SHA
+            - docker service update --image $REGISTRY_URL/whoami:${CI_COMMIT_SHA} --with-registry-auth whoami-stack_whoami
