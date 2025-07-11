@@ -11,11 +11,10 @@ services:
       - "--providers.docker.exposedByDefault=false"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
-      - "--certificatesresolvers.${CERT_RESOLVER}.acme.dnschallenge=true"
-      - "--certificatesresolvers.${CERT_RESOLVER}.acme.dnschallenge.provider=${DOMAIN_BASE}"
-      - "--certificatesresolvers.${CERT_RESOLVER}.acme.dnschallenge.delaybeforecheck=${DELAY_BEFORE_CHECK}"
-      - "--certificatesresolvers.${CERT_RESOLVER}.acme.email=${CERT_EMAIL}"
-      - "--certificatesresolvers.${CERT_RESOLVER}.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=${CERT_RESOLVER}"
+      - "--certificatesresolvers.letsencrypt.acme.email=${CERT_EMAIL}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
     ports:
       - "80:80"
       - "443:443"
@@ -23,6 +22,8 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./letsencrypt:/letsencrypt
+    environment:
+      ${TRAEFIK_ENV_BLOCK}
     networks:
       - traefik-net
     deploy:
@@ -35,8 +36,9 @@ services:
         - "traefik.http.routers.api.rule=Host(`traefik.${DOMAIN_BASE}`)"
         - "traefik.http.routers.api.service=api@internal"
         - "traefik.http.routers.api.entrypoints=websecure"
-        - "traefik.http.routers.api.tls.certresolver=${CERT_RESOLVER}"
+        - "traefik.http.routers.api.tls.certresolver=letsencrypt"
         - "traefik.http.services.api.loadbalancer.server.port=8080"
+
 
   agent:
     image: portainer/agent:2.20.2
@@ -70,7 +72,7 @@ services:
         - "traefik.enable=true"
         - "traefik.http.routers.portainer.rule=Host(`portainer.${DOMAIN_BASE}`)"
         - "traefik.http.routers.portainer.entrypoints=websecure"
-        - "traefik.http.routers.portainer.tls.certresolver=${CERT_RESOLVER}"
+        - "traefik.http.routers.portainer.tls.certresolver=letsencrypt"
         - "traefik.http.services.portainer.loadbalancer.server.port=9000"
 
   registry:
@@ -94,7 +96,7 @@ services:
         - "traefik.enable=true"
         - "traefik.http.routers.registry.rule=Host(`registry.${DOMAIN_BASE}`)"
         - "traefik.http.routers.registry.entrypoints=websecure"
-        - "traefik.http.routers.registry.tls.certresolver=${CERT_RESOLVER}"
+        - "traefik.http.routers.registry.tls.certresolver=letsencrypt"
         - "traefik.http.services.registry.loadbalancer.server.port=5000"
 
 

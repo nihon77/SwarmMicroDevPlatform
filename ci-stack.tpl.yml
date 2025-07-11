@@ -1,0 +1,50 @@
+version: "3.8"
+
+services:
+  woodpecker-server:
+    image: woodpeckerci/woodpecker-server:v3
+    environment:
+      - WOODPECKER_OPEN=false
+      - WOODPECKER_GITEA=false
+      - WOODPECKER_GITHUB=true
+      - WOODPECKER_PLUGINS_PRIVILEGED=woodpeckerci/plugin-docker-buildx:6.0.1
+      - WOODPECKER_HOST=https://ci.${DOMAIN_BASE}
+      - WOODPECKER_ADMIN=${WOODPECKER_ADMIN}
+      - WOODPECKER_AGENT_SECRET=${WOODPECKER_AGENT_SECRET}
+      - WOODPECKER_GITHUB_CLIENT=${WOODPECKER_GITHUB_CLIENT}
+      - WOODPECKER_GITHUB_SECRET=${WOODPECKER_GITHUB_SECRET}
+    volumes:
+      - woodpecker-server-data:/var/lib/woodpecker/
+    networks:
+      - traefik-net
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.ci.rule=Host(`ci.${DOMAIN_BASE}`)"
+        - "traefik.http.routers.ci.entrypoints=websecure"
+        - "traefik.http.routers.ci.tls.certresolver=letsencrypt"
+        - "traefik.http.services.ci.loadbalancer.server.port=8000"
+
+  woodpecker-agent:
+    image: woodpeckerci/woodpecker-agent:v3
+    environment:
+      - WOODPECKER_SERVER=woodpecker-server:9000
+      - WOODPECKER_AGENT_SECRET=${WOODPECKER_AGENT_SECRET}
+    volumes:
+      - woodpecker-agent-config:/etc/woodpecker
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - traefik-net
+    deploy:
+      #mode: global
+      placement:
+        constraints:
+          - node.role == manager
+
+networks:
+  traefik-net:
+    external: true
+
+volumes:
+  woodpecker-server-data:
+  woodpecker-agent-config:
